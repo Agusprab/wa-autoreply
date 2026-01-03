@@ -39,7 +39,6 @@ export async function POST(req) {
         from,
         `⚠️ Konfirmasi Hapus Data Terakhir
 
-ID         : ${last.id.slice(-4)}
 Tipe       : ${label}
 Nama       : ${last.product}
 Keterangan : ${last.description}
@@ -264,7 +263,7 @@ if (text.startsWith("/rekap ")) {
       const { data: item, error } = await supabase
         .from("cashflows")
         .select("id, type, product, description, amount")
-        .ilike("id", `%${id}`)
+        .eq("id", id)
         .single();
 
       if (error || !item) {
@@ -272,14 +271,14 @@ if (text.startsWith("/rekap ")) {
         return NextResponse.json({ ok: true });
       }
 
-      await supabase.from("cashflows").delete().ilike("id", `%${id}`);
+      await supabase.from("cashflows").delete().eq("id", id);
 
       const label = item.type === "IN" ? "Uang Masuk" : "Uang Keluar";
 
       await sendMessage(
         from,
         `🗑️ Data berhasil dihapus
-ID: ${item.id.slice(-4)}
+ID: ${item.id}
 Tipe: ${label}
 Nama: ${item.product}
 Keterangan: ${item.description}
@@ -328,7 +327,7 @@ Nominal: ${item.amount.toLocaleString("id-ID")}`
         message += `${num}. ${label} - ${row.product}\n`;
         message += `   💰 ${row.amount.toLocaleString("id-ID")}\n`;
         message += `   📝 ${row.description}\n`;
-        message += `   🆔 ID: ${row.id.slice(-4)} | 📅 ${date}\n\n`;
+        message += `   🆔 ID: ${row.id} | 📅 ${date}\n\n`;
       });
 
       message += `🔄 Gunakan /list ${page + 1} untuk halaman berikutnya`;
