@@ -264,7 +264,7 @@ if (text.startsWith("/rekap ")) {
       const { data: item, error } = await supabase
         .from("cashflows")
         .select("id, type, product, description, amount")
-        .like("id", `%${id}`)
+        .ilike("id", `%${id}`)
         .single();
 
       if (error || !item) {
@@ -272,7 +272,7 @@ if (text.startsWith("/rekap ")) {
         return NextResponse.json({ ok: true });
       }
 
-      await supabase.from("cashflows").delete().like("id", `%${id}`);
+      await supabase.from("cashflows").delete().ilike("id", `%${id}`);
 
       const label = item.type === "IN" ? "Uang Masuk" : "Uang Keluar";
 
