@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
+import crypto from 'crypto';
 
 export async function POST(req) {
   try {
@@ -23,7 +24,7 @@ export async function POST(req) {
     if (text.trim() === "/hapus") {
       const { data: last, error } = await supabase
         .from("cashflows")
-        .select("id, type, product, description, amount")
+        .select("id, selector_id, type, product, description, amount")
         .order("created_at", { ascending: false })
         .limit(1)
         .single();
@@ -39,6 +40,7 @@ export async function POST(req) {
         from,
         `⚠️ Konfirmasi Hapus Data Terakhir
 
+ID         : ${last.selector_id}
 Tipe       : ${label}
 Nama       : ${last.product}
 Keterangan : ${last.description}
@@ -56,7 +58,7 @@ Ketik:
     if (text.trim() === "/hapus iya") {
       const { data: last } = await supabase
         .from("cashflows")
-        .select("id, type, product, amount")
+        .select("id, selector_id, type, product, amount")
         .order("created_at", { ascending: false })
         .limit(1)
         .single();
@@ -138,12 +140,15 @@ ${cmd} nama | keterangan | nominal`
         return NextResponse.json({ ok: true });
       }
 
+      const selector_id = crypto.randomBytes(2).toString('hex').toUpperCase();
+
       await supabase.from("cashflows").insert({
         type,
         product,
         description,
         amount,
         wa_number: from,
+        selector_id,
       });
 
       const label = type === "IN" ? "Uang Masuk" : "Uang Keluar";
@@ -262,8 +267,8 @@ if (text.startsWith("/rekap ")) {
 
       const { data: item, error } = await supabase
         .from("cashflows")
-        .select("id, type, product, description, amount")
-        .eq("id", id)
+        .select("id, selector_id, type, product, description, amount")
+        .eq("selector_id", id)
         .single();
 
       if (error || !item) {
@@ -271,14 +276,14 @@ if (text.startsWith("/rekap ")) {
         return NextResponse.json({ ok: true });
       }
 
-      await supabase.from("cashflows").delete().eq("id", id);
+      await supabase.from("cashflows").delete().eq("selector_id", id);
 
       const label = item.type === "IN" ? "Uang Masuk" : "Uang Keluar";
 
       await sendMessage(
         from,
         `🗑️ Data berhasil dihapus
-ID: ${item.id}
+ID: ${item.selector_id}
 Tipe: ${label}
 Nama: ${item.product}
 Keterangan: ${item.description}
@@ -303,7 +308,7 @@ Nominal: ${item.amount.toLocaleString("id-ID")}`
 
       const { data: rows, error } = await supabase
         .from("cashflows")
-        .select("id, type, product, description, amount, created_at")
+        .select("id, selector_id, type, product, description, amount, created_at")
         .order("created_at", { ascending: false })
         .range(offset, offset + limit - 1);
 
@@ -327,7 +332,7 @@ Nominal: ${item.amount.toLocaleString("id-ID")}`
         message += `${num}. ${label} - ${row.product}\n`;
         message += `   💰 ${row.amount.toLocaleString("id-ID")}\n`;
         message += `   📝 ${row.description}\n`;
-        message += `   🆔 ID: ${row.id} | 📅 ${date}\n\n`;
+        message += `   🆔 ID: ${row.selector_id} | 📅 ${date}\n\n`;
       });
 
       message += `🔄 Gunakan /list ${page + 1} untuk halaman berikutnya`;
