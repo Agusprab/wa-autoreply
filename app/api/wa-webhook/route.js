@@ -253,10 +253,9 @@ if (text.startsWith("/rekap ")) {
 
     // /delete <id> — HAPUS LANGSUNG BERDASARKAN ID
     if (text.startsWith("/delete ")) {
-      const idStr = text.replace("/delete", "").trim();
-      const id = Number(idStr);
+      const id = text.replace("/delete", "").trim();
 
-      if (isNaN(id) || id <= 0) {
+      if (!id) {
         await sendMessage(from, "❌ ID tidak valid. Gunakan /delete <id>");
         return NextResponse.json({ ok: true });
       }
