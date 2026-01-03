@@ -219,6 +219,124 @@ if (text.startsWith("/rekap ")) {
 
 
 
+    // /help — TAMPILKAN BANTUAN
+    if (text.trim() === "/help") {
+      await sendMessage(
+        from,
+        `🤖 *Bantuan Bot CashFlow*
+
+📥 *Input Data:*
+• /masuk nama | keterangan | nominal
+• /keluar nama | keterangan | nominal
+
+📊 *Rekap Data:*
+• /rekap hari ini
+• /rekap bulan ini
+• /rekap kemarin
+• /rekap all
+• /rekap YYYY-MM (contoh: /rekap 2023-12)
+
+🗑️ *Hapus Data:*
+• /hapus (hapus data terakhir dengan konfirmasi)
+• /delete <id> (hapus langsung berdasarkan ID)
+
+📋 *Lihat Data:*
+• /list <halaman> (tampilkan data dengan pagination, 10 per halaman)
+
+💡 *Tips:*
+• Nominal tanpa titik/koma (contoh: 50000)
+• Gunakan | untuk pemisah
+• ID bisa dilihat dari /list`
+      );
+      return NextResponse.json({ ok: true });
+    }
+
+    // /delete <id> — HAPUS LANGSUNG BERDASARKAN ID
+    if (text.startsWith("/delete ")) {
+      const idStr = text.replace("/delete", "").trim();
+      const id = Number(idStr);
+
+      if (isNaN(id) || id <= 0) {
+        await sendMessage(from, "❌ ID tidak valid. Gunakan /delete <id>");
+        return NextResponse.json({ ok: true });
+      }
+
+      const { data: item, error } = await supabase
+        .from("cashflows")
+        .select("id, type, product, description, amount")
+        .eq("id", id)
+        .single();
+
+      if (error || !item) {
+        await sendMessage(from, "❌ Data dengan ID tersebut tidak ditemukan");
+        return NextResponse.json({ ok: true });
+      }
+
+      await supabase.from("cashflows").delete().eq("id", id);
+
+      const label = item.type === "IN" ? "Uang Masuk" : "Uang Keluar";
+
+      await sendMessage(
+        from,
+        `🗑️ Data berhasil dihapus
+ID: ${item.id}
+Tipe: ${label}
+Nama: ${item.product}
+Keterangan: ${item.description}
+Nominal: ${item.amount.toLocaleString("id-ID")}`
+      );
+
+      return NextResponse.json({ ok: true });
+    }
+
+    // /list <page> — TAMPILKAN DATA DENGAN PAGINATION
+    if (text.startsWith("/list")) {
+      const pageStr = text.replace("/list", "").trim();
+      const page = pageStr ? Number(pageStr) : 1;
+
+      if (isNaN(page) || page < 1) {
+        await sendMessage(from, "❌ Halaman tidak valid. Gunakan /list <halaman>");
+        return NextResponse.json({ ok: true });
+      }
+
+      const limit = 10;
+      const offset = (page - 1) * limit;
+
+      const { data: rows, error } = await supabase
+        .from("cashflows")
+        .select("id, type, product, description, amount, created_at")
+        .order("created_at", { ascending: false })
+        .range(offset, offset + limit - 1);
+
+      if (error) {
+        await sendMessage(from, "❌ Gagal mengambil data");
+        return NextResponse.json({ ok: true });
+      }
+
+      if (!rows || rows.length === 0) {
+        await sendMessage(from, `📋 Tidak ada data di halaman ${page}`);
+        return NextResponse.json({ ok: true });
+      }
+
+      let message = `📋 *Data CashFlow - Halaman ${page}*\n\n`;
+
+      rows.forEach((row, index) => {
+        const num = offset + index + 1;
+        const label = row.type === "IN" ? "➕ Masuk" : "➖ Keluar";
+        const date = new Date(row.created_at).toLocaleDateString("id-ID");
+
+        message += `${num}. ${label} - ${row.product}\n`;
+        message += `   💰 ${row.amount.toLocaleString("id-ID")}\n`;
+        message += `   📝 ${row.description}\n`;
+        message += `   🆔 ID: ${row.id} | 📅 ${date}\n\n`;
+      });
+
+      message += `🔄 Gunakan /list ${page + 1} untuk halaman berikutnya`;
+
+      await sendMessage(from, message);
+      return NextResponse.json({ ok: true });
+    }
+
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error("Webhook error:", err);
