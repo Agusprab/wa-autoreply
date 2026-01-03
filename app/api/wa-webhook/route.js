@@ -140,15 +140,14 @@ ${cmd} nama | keterangan | nominal`
         return NextResponse.json({ ok: true });
       }
 
-      const selector_id = crypto.randomBytes(2).toString('hex').toUpperCase();
-
+     
       await supabase.from("cashflows").insert({
         type,
         product,
         description,
         amount,
-        wa_number: from,
-        selector_id,
+        wa_number: from
+      
       });
 
       const label = type === "IN" ? "Uang Masuk" : "Uang Keluar";
