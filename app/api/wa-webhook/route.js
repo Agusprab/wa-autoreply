@@ -472,7 +472,7 @@ Nominal: ${item.amount.toLocaleString("id-ID")}`
         }
         const { data: product } = await supabase
           .from("products")
-          .select("id")
+          .select("id, name")
           .eq("selector_id", productId)
           .single();
         if (!product) {
@@ -489,10 +489,10 @@ Nominal: ${item.amount.toLocaleString("id-ID")}`
           return NextResponse.json({ ok: true });
         }
         if (!rows || rows.length === 0) {
-          await sendMessage(from, `📋 Tidak ada akun untuk produk ID ${productId}`);
+          await sendMessage(from, `📋 Tidak ada akun untuk produk ${product.name}`);
           return NextResponse.json({ ok: true });
         }
-        let message = `📋 *Akun untuk Produk ID ${productId}*\n\n`;
+        let message = `📋 *Akun untuk Produk ${product.name}*\n\n`;
         rows.forEach((row, index) => {
           const status = row.is_used ? "✅ Digunakan" : "❌ Belum";
           message += `${index + 1}. Username: ${row.username}\n`;
