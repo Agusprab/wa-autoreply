@@ -27,7 +27,7 @@ export async function POST(req) {
         .select("id, selector_id, type, product, description, amount")
         .order("created_at", { ascending: false })
         .limit(1)
-        .single();
+        .single();  
 
       if (error || !last) {
         await sendMessage(from, "❌ Tidak ada data yang bisa dihapus");
